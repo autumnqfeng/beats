@@ -371,11 +371,16 @@ func (p *Puller) newClusterConfig(config *ConfigResponse) map[string]InputList {
 			if item.Enabled == "on" {
 				input.Enabled = true
 			}
+			if item.StartPosition == "beginning" {
+				input.TailFiles = false
+			}
 			input.Output.Hosts = strings.Join(cluster.Hosts, ",")
 			input.Output.Cluster = cluster.Name
 			input.Output.Topic = item.Topic
 			input.Paths = append(input.Paths, item.PathBase)
 			input.Output.Prefix = p.getPrefix(item.Prefix, item.PathBase)
+			input.ExcludeLines = item.ExcludeLines
+			input.IncludeLines = item.IncludeLines
 			inputs = append(inputs, input)
 		}
 		if inputList, ok := clustersConfig[cluster.Name]; ok == true {

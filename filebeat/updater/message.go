@@ -36,12 +36,14 @@ type ClusterConfig struct {
 }
 
 type Config struct {
-	Enabled       string `json:"switch"`
-	PathBase      string `json:"path"`
-	StartPosition string `json:"start_position"`
-	Topic         string `json:"topic_id"`
-	Prefix        string `json:"msg_prefix"`
-	CustomePrefix string `json:"custom_msg_prefix"`
+	Enabled       string   `json:"switch"`
+	PathBase      string   `json:"path"`
+	StartPosition string   `json:"start_position"`
+	Topic         string   `json:"topic_id"`
+	Prefix        string   `json:"msg_prefix"`
+	CustomePrefix string   `json:"custom_msg_prefix"`
+	ExcludeLines  []string `json:"exclude_lines,omitempty"`
+	IncludeLines  []string `json:"include_lines,omitempty"`
 }
 
 type ConfigResponse struct {
@@ -56,11 +58,12 @@ type Field struct {
 }
 
 type Input struct {
-	Type     string `yaml:"type"`
-	Enabled  bool   `yaml:"enabled"`
-	Symlinks bool   `yaml:"symlinks"`
-	//Hosts         []string      `yaml:"hosts"`
+	Type          string        `yaml:"type"`
+	Enabled       bool          `yaml:"enabled"`
+	Symlinks      bool          `yaml:"symlinks"`
 	Paths         []string      `yaml:"paths"`
+	ExcludeLines  []string      `yaml:"exclude_lines,omitempty"`
+	IncludeLines  []string      `yaml:"include_lines,omitempty"`
 	TailFiles     bool          `yaml:"tail_files"`
 	ScanFrequency time.Duration `yaml:"scan_frequency"`
 	Backoff       time.Duration `yaml:"backoff"`
