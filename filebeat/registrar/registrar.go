@@ -67,8 +67,12 @@ var (
 	registryWrites   = monitoring.NewInt(nil, "registrar.writes.total")
 	registryFails    = monitoring.NewInt(nil, "registrar.writes.fail")
 	registrySuccess  = monitoring.NewInt(nil, "registrar.writes.success")
-	registryProgress = monitoring.NewRegistryProgress(nil, "registrar.progress")
+	registryProgress = monitoring.NewProgress()
 )
+
+func init() {
+	monitoring.NewFunc(nil, "registrar.progress", registryProgress.Report)
+}
 
 const fileStatePrefix = "filebeat::logs::"
 
@@ -205,7 +209,7 @@ func (r *Registrar) commitStateUpdates() {
 	}
 	r.log.Debugf("Registry file updated. %d active states.", len(states))
 	registrySuccess.Inc()
-	registryProgress.Add(states)
+	registryProgress.Upload(states)
 
 	if r.out != nil {
 		r.out.Published(r.bufferedStateUpdates)
