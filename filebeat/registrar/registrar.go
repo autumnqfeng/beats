@@ -209,7 +209,7 @@ func (r *Registrar) commitStateUpdates() {
 	}
 	r.log.Debugf("Registry file updated. %d active states.", len(states))
 	registrySuccess.Inc()
-	registryProgress.Upload(states)
+	registryProgress.Update(states)
 
 	if r.out != nil {
 		r.out.Published(r.bufferedStateUpdates)

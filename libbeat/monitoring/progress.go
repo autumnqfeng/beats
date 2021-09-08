@@ -50,7 +50,7 @@ func (p *Progress) Report(_ Mode, vs Visitor) {
 	}
 }
 
-func (p *Progress) Upload(states []file.State) {
+func (p *Progress) Update(states []file.State) {
 	p.Lock()
 	defer p.Unlock()
 
