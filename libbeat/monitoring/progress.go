@@ -22,46 +22,42 @@ func newFile(source string, size, offset int64) File {
 	}
 }
 
-type RegistryProgress struct {
+type Progress struct {
 	sync.Mutex
 	fileSlice []File
 	fun       expvar.Func
 }
 
-func NewRegistryProgress(r *Registry, name string, opts ...Option) *RegistryProgress {
-	if r == nil {
-		r = Default
-	}
-
-	v := &RegistryProgress{
+func NewProgress() *Progress {
+	v := &Progress{
 		fileSlice: []File{},
 	}
+
 	v.fun = func() interface{} {
 		return v.fileSlice
 	}
-	addVar(r, name, opts, v, v.fun)
 	return v
 }
 
-func (rp *RegistryProgress) Visit(_ Mode, vs Visitor) {
+func (p *Progress) Report(_ Mode, vs Visitor) {
 	switch vs.(type) {
 	case *KeyValueVisitor:
-		vs.OnInterface(rp.fun)
+		vs.OnInterface(p.fun)
 	case *structSnapshotVisitor:
-		vs.OnInterface(rp.fileSlice)
+		vs.OnInterface(p.fileSlice)
 	case *flatSnapshotVisitor:
-		vs.OnInterface(rp.fileSlice)
+		vs.OnInterface(p.fileSlice)
 	}
 }
 
-func (rp *RegistryProgress) Add(states []file.State) {
-	rp.Lock()
-	defer rp.Unlock()
+func (p *Progress) Update(states []file.State) {
+	p.Lock()
+	defer p.Unlock()
 
 	fileSlice := make([]File, 0)
 	for _, state := range states {
 		fileInfo, _ := os.Stat(state.Source)
 		fileSlice = append(fileSlice, newFile(state.Source, fileInfo.Size(), state.Offset))
 	}
-	rp.fileSlice = fileSlice
+	p.fileSlice = fileSlice
 }
