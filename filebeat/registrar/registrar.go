@@ -61,12 +61,13 @@ type StateStore interface {
 }
 
 var (
-	statesUpdate    = monitoring.NewInt(nil, "registrar.states.update")
-	statesCleanup   = monitoring.NewInt(nil, "registrar.states.cleanup")
-	statesCurrent   = monitoring.NewInt(nil, "registrar.states.current")
-	registryWrites  = monitoring.NewInt(nil, "registrar.writes.total")
-	registryFails   = monitoring.NewInt(nil, "registrar.writes.fail")
-	registrySuccess = monitoring.NewInt(nil, "registrar.writes.success")
+	statesUpdate     = monitoring.NewInt(nil, "registrar.states.update")
+	statesCleanup    = monitoring.NewInt(nil, "registrar.states.cleanup")
+	statesCurrent    = monitoring.NewInt(nil, "registrar.states.current")
+	registryWrites   = monitoring.NewInt(nil, "registrar.writes.total")
+	registryFails    = monitoring.NewInt(nil, "registrar.writes.fail")
+	registrySuccess  = monitoring.NewInt(nil, "registrar.writes.success")
+	registryProgress = monitoring.NewRegistryProgress(nil, "registrar.progress")
 )
 
 const fileStatePrefix = "filebeat::logs::"
@@ -204,6 +205,7 @@ func (r *Registrar) commitStateUpdates() {
 	}
 	r.log.Debugf("Registry file updated. %d active states.", len(states))
 	registrySuccess.Inc()
+	registryProgress.Add(states)
 
 	if r.out != nil {
 		r.out.Published(r.bufferedStateUpdates)
