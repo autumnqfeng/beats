@@ -367,20 +367,8 @@ func (p *Puller) newClusterConfig(config *ConfigResponse) map[string]InputList {
 	for _, cluster := range config.Data.Clusters {
 		inputs := make([]Input, 0)
 		for _, item := range cluster.Configs {
-			input := NewInput()
-			if item.Enabled == "on" {
-				input.Enabled = true
-			}
-			if item.StartPosition == "beginning" {
-				input.TailFiles = false
-			}
-			input.Output.Hosts = strings.Join(cluster.Hosts, ",")
-			input.Output.Cluster = cluster.Name
-			input.Output.Topic = item.Topic
-			input.Paths = append(input.Paths, item.PathBase)
-			input.Output.Prefix = p.getPrefix(item.Prefix, item.PathBase)
-			input.ExcludeLines = item.ExcludeLines
-			input.IncludeLines = item.IncludeLines
+			input := p.newInput(item, cluster)
+
 			inputs = append(inputs, input)
 		}
 		if inputList, ok := clustersConfig[cluster.Name]; ok == true {
@@ -395,20 +383,25 @@ func (p *Puller) newClusterConfig(config *ConfigResponse) map[string]InputList {
 	return clustersConfig
 }
 
-func NewInput() Input {
-	input := Input{
-		Type:          "log",
-		Enabled:       false,
-		Symlinks:      true,
-		Paths:         make([]string, 0),
-		ScanFrequency: 10 * time.Second,
-		MaxBackoff:    10 * time.Second,
-		Backoff:       1 * time.Second,
-		TailFiles:     true,
-		Output: Output{
-			Codec: "format",
-		},
+func (p *Puller) newInput(config Config, cluster ClusterConfig) Input {
+	input := defaultInput
+	if config.Enabled == "on" {
+		input.Enabled = true
 	}
+	input.Paths = append(input.Paths, config.PathBase)
+	input.ExcludeLines = config.ExcludeLines
+	input.IncludeLines = config.IncludeLines
+	input.Fields = config.Fields
+
+	input.Output.Hosts = strings.Join(cluster.Hosts, ",")
+	if config.Codec != "" {
+		input.Output.Codec = config.Codec
+	}
+	if config.Codec == "format" {
+		input.Output.Prefix = p.getPrefix(config.Prefix, config.PathBase)
+	}
+	input.Output.Cluster = cluster.Name
+	input.Output.Topic = config.Topic
 	return input
 }
 
@@ -416,11 +409,11 @@ func (p *Puller) getPrefix(option string, path string) string {
 	var result string
 	switch option {
 	case "hostname":
-		result = "[" + p.hostname + "]"
+		result = "[" + p.hostname + "] "
 	case "path":
-		result = "[" + path + "]"
+		result = "[" + path + "] "
 	case "both":
-		result = "[" + p.hostname + path + "]"
+		result = "[" + p.hostname + path + "] "
 	default:
 	}
 	return result

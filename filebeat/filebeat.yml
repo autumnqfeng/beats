@@ -29,7 +29,7 @@ output.kafka-cluster:
   compression: gzip
   max_message_bytes: 1000000
   codec.adaptor:
-    string: '%{[output.prefix]} %{[message]}'
+    string: '%{[output.prefix]}%{[message]}'
 
 #================================= updater ==================================
 #updater is for fetching config from log collect service and report collecting
