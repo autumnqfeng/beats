@@ -54,6 +54,7 @@ import (
 
 	// Add filebeat level processors
 	_ "github.com/elastic/beats/v7/filebeat/processor/add_kubernetes_metadata"
+	_ "github.com/elastic/beats/v7/filebeat/processor/add_so_metadata"
 	_ "github.com/elastic/beats/v7/libbeat/processors/decode_csv_fields"
 
 	// include all filebeat specific autodiscover features
