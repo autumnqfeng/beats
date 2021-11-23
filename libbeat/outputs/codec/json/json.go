@@ -39,9 +39,9 @@ type Encoder struct {
 
 // Config is used to pass encoding parameters to New.
 type Config struct {
-	Pretty     bool
-	EscapeHTML bool
-	LocalTime  bool
+	Pretty     bool `config:"pretty"`
+	EscapeHTML bool `config:"escape_html"`
+	LocalTime  bool `config:"local_time"`
 }
 
 var defaultConfig = Config{

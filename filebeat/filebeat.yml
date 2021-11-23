@@ -30,6 +30,9 @@ output.kafka-cluster:
   max_message_bytes: 1000000
   codec.adaptor:
     string: '%{[output.prefix]}%{[message]}'
+  # the time zone of the JSON data is set to China
+  # codec.json:
+  #   local_time: true
 
 #================================= updater ==================================
 #updater is for fetching config from log collect service and report collecting

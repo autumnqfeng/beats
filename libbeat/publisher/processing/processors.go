@@ -190,6 +190,7 @@ func debugPrintProcessor(info beat.Info, log *logp.Logger) *processorFn {
 	encoder := json.New(info.Version, json.Config{
 		Pretty:     true,
 		EscapeHTML: false,
+		LocalTime:  true,
 	})
 	return newProcessor("debugPrint", func(event *beat.Event) (*beat.Event, error) {
 		mux.Lock()
