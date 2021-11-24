@@ -31,8 +31,8 @@ output.kafka-cluster:
   codec.adaptor:
     string: '%{[output.prefix]}%{[message]}'
   # the time zone of the JSON data is set to China
-  # codec.json:
-  #   local_time: true
+#  codec.json:
+#    localtime: true
 
 #================================= updater ==================================
 #updater is for fetching config from log collect service and report collecting
