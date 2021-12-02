@@ -99,6 +99,7 @@ func New(stateStore StateStore, out successLogger, flushTimeout time.Duration) (
 
 // GetStates return the registrar states
 func (r *Registrar) GetStates() []file.State {
+	r.gcStates()
 	return r.states.GetStates()
 }
 
