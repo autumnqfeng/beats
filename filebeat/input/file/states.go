@@ -121,9 +121,9 @@ func (s *States) CleanupWith(fn func(string)) (int, int) {
 		canExpire := state.TTL > 0
 		expired := (canExpire && currentTime.Sub(state.Timestamp) > state.TTL)
 		_, err := os.Stat(state.Source)
-		fileNotExit := err == nil || os.IsNotExist(err)
+		fileExit := err == nil || os.IsExist(err)
 
-		if state.TTL == 0 || expired || fileNotExit {
+		if state.TTL == 0 || expired || !fileExit {
 			if !state.Finished {
 				logp.Err("State for %s should have been dropped, but couldn't as state is not finished.", state.Source)
 				i++
