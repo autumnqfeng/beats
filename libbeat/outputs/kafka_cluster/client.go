@@ -151,8 +151,9 @@ func (c *client) getEventKafkaClient(data *publisher.Event) (*kafkaClient, error
 		return nil, fmt.Errorf("get kafka cluster failed with %v", err)
 	}
 
-	if c.kafkaClientPool.contains(cluster) {
-		return c.kafkaClientPool.getClient(cluster), nil
+	clusterTopic := fmt.Sprintf("%s-%s", cluster, topic)
+	if c.kafkaClientPool.contains(clusterTopic) {
+		return c.kafkaClientPool.getClient(clusterTopic), nil
 	}
 
 	hosts, err := c.hosts.Select(event)
@@ -160,7 +161,6 @@ func (c *client) getEventKafkaClient(data *publisher.Event) (*kafkaClient, error
 		return nil, fmt.Errorf("get kafka hosts failed with %v", err)
 	}
 
-	clusterTopic := fmt.Sprintf("%s-%s", cluster, topic)
 	kafkaClient, err := c.kafkaClientPool.addClient(clusterTopic, newKafkaClient(c.log, c.observer, hosts, c.index, c.key, topic, c.codec, c.config))
 	if err != nil {
 		return nil, fmt.Errorf("%v add kafka client failed with %v", clusterTopic, err)

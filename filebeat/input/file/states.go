@@ -121,7 +121,7 @@ func (s *States) CleanupWith(fn func(string)) (int, int) {
 		canExpire := state.TTL > 0
 		expired := (canExpire && currentTime.Sub(state.Timestamp) > state.TTL)
 		_, err := os.Stat(state.Source)
-		fileExit := err == nil || os.IsExist(err)
+		fileExit := (err == nil || os.IsExist(err))
 
 		if state.TTL == 0 || expired || !fileExit {
 			if !state.Finished {
