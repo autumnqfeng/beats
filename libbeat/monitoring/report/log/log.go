@@ -141,11 +141,11 @@ func (r *reporter) snapshotLoop() {
 
 func (r *reporter) logSnapshot(s monitoring.FlatSnapshot) {
 	if snapshotLen(s) > 0 {
-		r.logger.Infow("Non-zero metrics in the last "+r.period.String(), toKeyValuePairs(s)...)
+		r.logger.Debugw("Non-zero metrics in the last "+r.period.String(), toKeyValuePairs(s)...)
 		return
 	}
 
-	r.logger.Infof("No non-zero metrics in the last %v", r.period)
+	r.logger.Debugf("No non-zero metrics in the last %v", r.period)
 }
 
 func (r *reporter) logTotals(s monitoring.FlatSnapshot) {
