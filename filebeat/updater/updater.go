@@ -397,9 +397,7 @@ func (p *Puller) newInput(config Config, cluster ClusterConfig) Input {
 	if config.Codec != "" {
 		input.Output.Codec = config.Codec
 	}
-	if config.Codec == "format" {
-		input.Output.Prefix = p.getPrefix(config.Prefix, config.PathBase)
-	}
+	input.Output.Prefix = p.getPrefix(config.Prefix, config.PathBase)
 	input.Output.Cluster = cluster.Name
 	input.Output.Topic = config.Topic
 	return input
