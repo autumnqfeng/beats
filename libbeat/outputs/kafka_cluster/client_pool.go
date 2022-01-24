@@ -35,7 +35,6 @@ type kafkaClient struct {
 	codec    codec.Codec
 	config   sarama.Config
 	mux      sync.Mutex
-	done     chan struct{}
 
 	producer sarama.AsyncProducer
 
@@ -93,7 +92,8 @@ func (p *clientPool) getClient(cluster string) *kafkaClient {
 }
 
 func (p *clientPool) addClient(clusterTopic string, client *kafkaClient) (*kafkaClient, error) {
-	if err := p.pool.add(clusterTopic, client, 60*60*10); err != nil {
+	// kafka producer expire time is 5 minutes
+	if err := p.pool.add(clusterTopic, client, 60*5); err != nil {
 		return nil, err
 	}
 
@@ -133,7 +133,6 @@ func (c *kafkaClient) Close() {
 		return
 	}
 
-	close(c.done)
 	c.producer.AsyncClose()
 	c.wg.Wait()
 	c.producer = nil

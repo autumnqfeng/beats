@@ -52,6 +52,8 @@ type Puller struct {
 	hostname       string
 	configPath     string
 	clustersConfig map[string]InputList
+	topicInput     map[string]Input
+	pathTopic      map[string]string
 }
 
 type Reporter struct {
@@ -99,6 +101,8 @@ func (u *Updater) Start() error {
 		hostname:       hostname,
 		configPath:     config.Path,
 		clustersConfig: make(map[string]InputList),
+		topicInput:     make(map[string]Input),
+		pathTopic:      make(map[string]string),
 	}
 	u.puller = puller
 	u.reporter.client = &client
@@ -350,7 +354,12 @@ func (p *Puller) pullConfig() (map[string]InputList, error) {
 	if configIsChanged(clusterConfig, p.clustersConfig) == false {
 		return clusterConfig, nil
 	}
-	p.clustersConfig = clusterConfig
+	// config has same path produce to different topic
+	if err = p.dealSamePath(clusterConfig); err != nil {
+		return nil, errors.Wrap(err, "puller deal same path error")
+	}
+
+	p.savePrevConfig(clusterConfig)
 	configString, err := convertToString(clusterConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "puller convert config to string error")
@@ -360,6 +369,67 @@ func (p *Puller) pullConfig() (map[string]InputList, error) {
 		return nil, errors.Wrap(err, "puller persist config to file error")
 	}
 	return clusterConfig, nil
+}
+
+// config has same path produce to different topic
+func (p *Puller) dealSamePath(newConfig map[string]InputList) error {
+	newPaths := make([]string, 0)
+	for _, config := range newConfig {
+		for _, input := range config.Inputs {
+			newPaths = append(newPaths, input.Paths...)
+		}
+	}
+	for _, path := range newPaths {
+		topic, ok := p.pathTopic[path]
+		if ok {
+			delete(p.topicInput, topic)
+		}
+	}
+
+	inputList := make([]Input, 0)
+	for _, input := range p.topicInput {
+		inputList = append(inputList, input)
+	}
+	midConfig := map[string]InputList{
+		"midConfig": {inputList},
+	}
+
+	configString, err := convertToString(midConfig)
+	if err != nil {
+		return errors.Wrap(err, "dealSamePath convert config to string error")
+	}
+	if len(inputList) == 0 {
+		configString = ""
+	}
+	err = persistToFile(configString, p.configPath)
+	if err != nil {
+		return errors.Wrap(err, "dealSamePath persist config to file error")
+	}
+	// wait runner list remove the same path runner
+	time.Sleep(10 * time.Second)
+	return nil
+}
+
+func (p *Puller) savePrevConfig(clusterConfig map[string]InputList) {
+	p.clustersConfig = clusterConfig
+
+	topicPaths := make(map[string][]string)
+	topicInput := make(map[string]Input)
+	for _, config := range clusterConfig {
+		for _, input := range config.Inputs {
+			topicPaths[input.Output.Cluster+input.Output.Topic] = input.Paths
+			topicInput[input.Output.Cluster+input.Output.Topic] = input
+		}
+	}
+	p.topicInput = topicInput
+
+	pathTopic := make(map[string]string)
+	for topic, paths := range topicPaths {
+		for _, path := range paths {
+			pathTopic[path] = topic
+		}
+	}
+	p.pathTopic = pathTopic
 }
 
 func (p *Puller) newClusterConfig(config *ConfigResponse) map[string]InputList {
