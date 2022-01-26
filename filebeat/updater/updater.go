@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"time"
 
@@ -17,6 +18,7 @@ import (
 	"github.com/elastic/beats/v7/libbeat/common"
 	helper "github.com/elastic/beats/v7/libbeat/common/file"
 	"github.com/elastic/beats/v7/libbeat/logp"
+	"github.com/elastic/beats/v7/libbeat/version"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 )
@@ -25,6 +27,7 @@ const (
 	debugSelector      = "updater"
 	fetchConfigPath    = "/qbus/logcollect-service/config"
 	reportProgressPath = "/qbus/logcollect-service/progress"
+	reportAgentPath    = "/qbus/logcollect-service/agent"
 	defaultConfigPath  = "/etc/filebeat/input.d/input.yml"
 )
 
@@ -124,6 +127,15 @@ func (u *Updater) Run() {
 	//timer := time.NewTicker(time.Second * r.work.Period)
 	defer timer.Stop()
 
+	if err := u.reporter.reportAgent(http.MethodPut); err != nil {
+		logp.Info("updater put agent error: %s", err)
+	}
+	defer func() {
+		if err := u.reporter.reportAgent(http.MethodDelete); err != nil {
+			logp.Info("updater delete agent error: %s", err)
+		}
+	}()
+
 	for {
 		select {
 		case <-timer.C:
@@ -133,7 +145,7 @@ func (u *Updater) Run() {
 				continue
 			}
 			if err := u.reporter.reportProgress(config); err != nil {
-				logp.Info("updater reporter error: %s", err)
+				logp.Info("updater reporter progress error: %s", err)
 			}
 		case <-u.done:
 			logp.Info("updater Stoped")
@@ -220,7 +232,7 @@ func (r *Reporter) getFileState() map[string]File {
 	return fileStats
 }
 
-func (r *Reporter) NewProgressMessage(stats map[string]File, clustersConfig map[string]InputList) (Progress, error) {
+func (r *Reporter) NewProgressMessage(stats map[string]File, clustersConfig map[string]InputList) Progress {
 	progress := Progress{
 		HostName:  r.hostname,
 		TimeStamp: time.Now().Unix(),
@@ -252,7 +264,23 @@ func (r *Reporter) NewProgressMessage(stats map[string]File, clustersConfig map[
 		progress.Clusters = append(progress.Clusters, cluster)
 	}
 	debugf("progress message: %v", progress)
-	return progress, nil
+	return progress
+}
+
+func (r *Reporter) NewAgentMessage() (Agent, error) {
+	agent := Agent{}
+	hostname, err := os.Hostname()
+	if err != nil {
+		return agent, errors.Wrap(err, "agent message get hostname error")
+	}
+
+	agent.Hostname = hostname
+	agent.Version = version.GetDefaultVersion()
+	agent.BuildInfo = fmt.Sprintf("(%s; %s; %s; %s)",
+		runtime.GOOS, runtime.GOARCH,
+		version.Commit(), version.BuildTime())
+	debugf("agent message: %v", agent)
+	return agent, nil
 }
 
 func getFiles(path string) []string {
@@ -289,9 +317,8 @@ func getFiles(path string) []string {
 	return files
 }
 
-func (r *Reporter) doHttpRequest(body Progress) error {
-	url := "http://" + r.client.Host + reportProgressPath
-	request, err := r.client.newRequest(url, body, nil, http.MethodPut)
+func (r *Reporter) doHttpRequest(url, method string, body interface{}) error {
+	request, err := r.client.newRequest(url, body, nil, method)
 	if err != nil {
 		return errors.Wrap(err, "reporter new http request error")
 	}
@@ -303,11 +330,21 @@ func (r *Reporter) doHttpRequest(body Progress) error {
 }
 
 func (r *Reporter) reportProgress(config map[string]InputList) error {
-	message, err := r.NewProgressMessage(r.getFileState(), config)
+	url := "http://" + r.client.Host + reportProgressPath
+	message := r.NewProgressMessage(r.getFileState(), config)
+	if err := r.doHttpRequest(url, http.MethodPut, message); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *Reporter) reportAgent(method string) error {
+	url := "http://" + r.client.Host + reportAgentPath
+	message, err := r.NewAgentMessage()
 	if err != nil {
 		return err
 	}
-	err = r.doHttpRequest(message)
+	err = r.doHttpRequest(url, method, message)
 	if err != nil {
 		return err
 	}

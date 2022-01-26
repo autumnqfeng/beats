@@ -2,6 +2,12 @@ package updater
 
 import "time"
 
+type Agent struct {
+	Hostname  string `json:"hostname"`
+	Version   string `json:"version"`
+	BuildInfo string `json:"build_info"`
+}
+
 type Progress struct {
 	HostName  string    `json:"hostname"`
 	TimeStamp int64     `json:"timestamp"`
