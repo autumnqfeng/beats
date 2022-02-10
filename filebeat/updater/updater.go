@@ -124,17 +124,11 @@ func (u *Updater) Start() error {
 
 func (u *Updater) Run() {
 	timer := time.NewTicker(u.Period)
-	//timer := time.NewTicker(time.Second * r.work.Period)
 	defer timer.Stop()
 
 	if err := u.reporter.reportAgent(http.MethodPut); err != nil {
 		logp.Info("updater put agent error: %s", err)
 	}
-	defer func() {
-		if err := u.reporter.reportAgent(http.MethodDelete); err != nil {
-			logp.Info("updater delete agent error: %s", err)
-		}
-	}()
 
 	for {
 		select {
@@ -156,6 +150,10 @@ func (u *Updater) Run() {
 
 func (u *Updater) Stop() {
 	u.done <- struct{}{}
+	logp.Info("Stopping updater and delete agent")
+	if err := u.reporter.reportAgent(http.MethodDelete); err != nil {
+		logp.Info("updater delete agent error: %s", err)
+	}
 }
 
 func (c *Client) newRequest(url string, body interface{}, params map[string]string, method string) (*http.Request, error) {

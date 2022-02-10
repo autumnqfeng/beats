@@ -451,6 +451,7 @@ func (fb *Filebeat) Run(b *beat.Beat) error {
 		updater.Stop()
 		return err
 	}
+	defer updater.Stop()
 
 	// If run once, add crawler completion check as alternative to done signal
 	if *once {
@@ -500,7 +501,6 @@ func (fb *Filebeat) Run(b *beat.Beat) error {
 	modules.Stop()
 	adiscover.Stop()
 	crawler.Stop()
-	updater.Stop()
 
 	timeout := fb.config.ShutdownTimeout
 	// Checks if on shutdown it should wait for all events to be published
