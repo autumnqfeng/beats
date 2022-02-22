@@ -125,10 +125,9 @@ func (u *Updater) Start() error {
 func (u *Updater) Run() {
 	timer := time.NewTicker(u.Period)
 	defer timer.Stop()
-
-	if err := u.reporter.reportAgent(http.MethodPut); err != nil {
-		logp.Info("updater put agent error: %s", err)
-	}
+	// 1 minute
+	timerAgent := time.NewTicker(u.Period * 6)
+	defer timerAgent.Stop()
 
 	for {
 		select {
@@ -140,6 +139,10 @@ func (u *Updater) Run() {
 			}
 			if err := u.reporter.reportProgress(config); err != nil {
 				logp.Info("updater reporter progress error: %s", err)
+			}
+		case <-timerAgent.C:
+			if err := u.reporter.reportAgent(http.MethodPut); err != nil {
+				logp.Info("updater put agent error: %s", err)
 			}
 		case <-u.done:
 			logp.Info("updater Stoped")
